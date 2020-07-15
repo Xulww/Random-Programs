@@ -1,299 +1,232 @@
 import random
-import terrain_cell
-import animal
 
-# Greeting and getting user input for the simulation parameters
-while True:
-    try:
-        print('Hello!\nPlease enter the required information below...')
-        world_size = int(input('Enter world size (Positive number): '))
-        days = int(input('How many days would you like the simulation to run for (Positive number): '))
+class EatErorr(Exception):
+    pass
 
-        if world_size <= 0:
-            raise ValueError
-        break
-    except ValueError:
-        print('Please enter a positive number!')
+class Creature:
+    def __init__(self, cell):
+        self.hunger = 10
+        self.status = 1
+        self.cell = cell
 
+    @property
+    def id(self):
+        return id(self)
 
-# Creating the animal objects that will be a part of the simulation
-carnivore_X = random.randint(0, world_size - 1)
-carnivore_Y = random.randint(0, world_size - 1)
-carnivore = animal.Animal('Carnivore', 'alive', 10, [carnivore_X, carnivore_Y])
+    @property
+    def klass(self):
+        return self.__class__.__name__
 
-herbivore_X = random.randint(0, world_size - 1)
-herbivore_Y = random.randint(0, world_size - 1)
-herbivore = animal.Animal('Herbivore', 'alive', 10, [herbivore_X, herbivore_Y])
+    @property
+    def cell(self):
+        return self._cell
 
-scavenger_X = random.randint(0, world_size - 1)
-scavenger_Y = random.randint(0, world_size - 1)
-scavenger = animal.Animal('Scavenger', 'alive', 10, [scavenger_X, scavenger_Y])
+    @cell.setter
+    def cell(self, value):
+        del self.cell
+        self._cell = value
+        self._cell.creatures.append(self)
 
-terrain_cell.TerrainCell.animals = []
+        if self.cell.is_water:
+            self.die("Drawn in cell: %s, %s" % self.cell.coordinates)
 
-# Terrain variables needed
-terrain_type = ['WATER', 'DESERT', 'MOUNTAIN', 'GRASS']
-terrain = []
-terrain_row = []
+    @cell.deleter
+    def cell(self):
+        if hasattr(self, '_cell'):
+            self._cell.creatures.remove(self)
+            del self._cell
 
-# Generating the world grid
-terrain_row_counter = 1
-while terrain_row_counter <= world_size:
-    terrain_row = []
-
-    terrain_row_elements_counter = 1
-    while terrain_row_elements_counter <= world_size:
-        random_terrain = random.randint(0, 3)
-
-        terrain_row.append(terrain_cell.TerrainCell(terrain_type[random_terrain], []))
-        
-        terrain_row_elements_counter += 1
-
-    terrain.append(terrain_row)
-    terrain_row_counter += 1
-
-# Adding the animals into the world and printing it into the console
-print('This is how the world looks like:')
-for i in range(len(terrain)):
-    print('')
-
-    for j in range(len(terrain_row)):
-        if (i == carnivore_X and j == carnivore_Y):
-            terrain[i][j].animals.append(carnivore.kind)
-        if (i == herbivore_X and j == herbivore_Y):
-            terrain[i][j].animals.append(herbivore.kind)
-        if (i == scavenger_X and j == scavenger_Y):
-            terrain[i][j].animals.append(scavenger.kind)
-        
-        print(terrain[i][j].cell_type, end = ' ')
-        print(', ', end = '')
-        print(terrain[i][j].animals, end = ' ')
-        print('|', end = ' ')
-
-def carnivore_move(direction):
-    for i in range(len(terrain)):
-        for j in range(len(terrain_row)):
-            if len(terrain[i][j].animals) != 0:
-                if ('Carnivore' in terrain[i][j].animals):
-                    carnivore_X = i
-                    carnivore_Y = j
-
-    # Going up a cell
-    # Making sure there is no index out of range error
-    if (carnivore_X - 1 <= 0):
-        direction += 1
-    else:
-        if (direction == 1):
-            terrain[carnivore_X][carnivore_Y].animals.clear()
-            terrain[carnivore_X - 1][carnivore_Y].animals.append(carnivore.kind)
-            print('The ' + carnivore.kind + ' moved to: ' + str((carnivore_X - 1)), str(carnivore_Y) + ' from ' + str(carnivore_X), str(carnivore_Y))
-            carnivore.location = [carnivore_X - 1, carnivore_Y]
-        
-    # Going down a cell
-    # Making sure there is no index out of range error
-    if (carnivore_X + 1 >= world_size):
-        direction += 1
-    else:
-        if (direction == 2):
-            terrain[carnivore_X][carnivore_Y].animals.clear()
-            terrain[carnivore_X + 1][carnivore_Y].animals.append(carnivore.kind)
-            print('The ' + carnivore.kind + ' moved to: ' + str((carnivore_X + 1)), str(carnivore_Y) + ' from ' + str(carnivore_X), str(carnivore_Y))
-            carnivore.location = [carnivore_X + 1, carnivore_Y] 
-        
-    # Going left a cell
-    # Making sure there is no index out of range error
-    if (carnivore_Y - 1 <= 0):
-        direction += 1
-    else:
-        if (direction == 3):
-            terrain[carnivore_X][carnivore_Y].animals.clear()
-            terrain[carnivore_X][carnivore_Y - 1].animals.append(carnivore.kind)
-            print('The ' + carnivore.kind + ' moved to: ' + str(carnivore_X), str((carnivore_Y - 1)) + ' from ' + str(carnivore_X), str(carnivore_Y))
-            carnivore.location = [carnivore_X, carnivore_Y - 1] 
-        
-    # Going up a cell
-    # Making sure there is no index out of range error
-    if (carnivore_Y + 1 >= world_size):
-        direction -= 1
-    else:
-        if (direction == 4):
-            terrain[carnivore_X][carnivore_Y].animals.clear()
-            terrain[carnivore_X][carnivore_Y + 1].animals.append(carnivore.kind)
-            print('The ' + carnivore.kind + ' moved to: ' + str(carnivore_X), str((carnivore_Y + 1)) + ' from ' + str(carnivore_X), str(carnivore_Y))
-            carnivore.location = [carnivore_X, carnivore_Y + 1]
-
-    if (terrain[carnivore_X][carnivore_Y].cell_type == 'WATER'):
-        carnivore.status = 'dead'
-        print('The Carnivore drowned')
-
-def herbivore_move(direction):
-    for i in range(len(terrain)):
-        for j in range(len(terrain_row)):
-            if len(terrain[i][j].animals) != 0:
-                if ('Herbivore' in terrain[i][j].animals):
-                    herbivore_X = i
-                    herbivore_Y = j
-
-    # Going up a cell
-    # Making sure there is no index out of range error
-    if (herbivore_X - 1 <= 0):
-        direction += 1
-    else:
-        if (direction == 1):
-            terrain[herbivore_X][herbivore_Y].animals.clear()
-            terrain[herbivore_X - 1][herbivore_Y].animals.append(herbivore.kind)
-            print('The ' + herbivore.kind + ' moved to: ' + str((herbivore_X - 1)), str(herbivore_Y) + ' from ' + str(herbivore_X), str(herbivore_Y))
-            herbivore.location = [herbivore_X - 1, herbivore_Y]
-        
-    # Going down a cell
-    # Making sure there is no index out of range error
-    if (herbivore_X + 1 >= world_size):
-        direction += 1
-    else:
-        if (direction == 2):
-            terrain[herbivore_X][herbivore_Y].animals.clear()
-            terrain[herbivore_X + 1][herbivore_Y].animals.append(herbivore.kind)
-            print('The ' + herbivore.kind + ' moved to: ' + str((herbivore_X + 1)), str(herbivore_Y) + ' from ' + str(herbivore_X), str(herbivore_Y))
-            herbivore.location = [herbivore_X + 1, herbivore_Y]
-        
-    # Going left a cell
-    # Making sure there is no index out of range error
-    if (herbivore_Y - 1 <= 0):
-        direction += 1
-    else:
-        if (direction == 3):
-            terrain[herbivore_X][herbivore_Y].animals.clear()
-            terrain[herbivore_X][herbivore_Y - 1].animals.append(herbivore.kind)
-            print('The ' + herbivore.kind + ' moved to: ' + str(herbivore_X), str((herbivore_Y - 1)) + ' from ' + str(herbivore_X), str(herbivore_Y))
-            herbivore.location = [herbivore_X, herbivore_Y - 1]
-        
-    # Going up a cell
-    # Making sure there is no index out of range error
-    if (herbivore_Y + 1 >= world_size):
-        direction -= 1
-    else:
-        if (direction == 4):
-            terrain[herbivore_X][herbivore_Y].animals.clear()
-            terrain[herbivore_X][herbivore_Y + 1].animals.append(herbivore.kind)
-            print('The ' + herbivore.kind + ' moved to: ' + str(herbivore_X), str((herbivore_Y + 1)) + ' from ' + str(herbivore_X), str(herbivore_Y))
-            herbivore.location = [herbivore_X, herbivore_Y + 1]
-
-    if (terrain[herbivore_X][herbivore_Y].cell_type == 'WATER'):
-        herbivore.status = 'dead'
-        print('The Herbivore drowned')
-
-def scavenger_move(direction):
-    for i in range(len(terrain)):
-        for j in range(len(terrain_row)):
-            if len(terrain[i][j].animals) != 0:
-                if ('Scavenger' in terrain[i][j].animals):
-                    scavenger_X = i
-                    scavenger_Y = j
-
-    # Going up a cell
-    # Making sure there is no index out of range error
-    if (scavenger_X - 1 <= 0):
-        direction += 1
-    else:
-        if (direction == 1):
-            terrain[scavenger_X][scavenger_Y].animals.clear()
-            terrain[scavenger_X - 1][scavenger_Y].animals.append(scavenger.kind)
-            print('The ' + scavenger.kind + ' moved to: ' + str((scavenger_X - 1)), str(scavenger_Y) + ' from ' + str(scavenger_X), str(scavenger_Y))
-            scavenger.location = [scavenger_X - 1, scavenger_Y]
-        
-    # Going down a cell
-    # Making sure there is no index out of range error
-    if (scavenger_X + 1 >= world_size):
-        direction += 1
-    else:
-        if (direction == 2):
-            terrain[scavenger_X][scavenger_Y].animals.clear()
-            terrain[scavenger_X + 1][scavenger_Y].animals.append(scavenger.kind)
-            print('The ' + scavenger.kind + ' moved to: ' + str((scavenger_X + 1)), str(scavenger_Y) + ' from ' + str(scavenger_X), str(scavenger_Y)) 
-            scavenger.location = [scavenger_X + 1, scavenger_Y]
-        
-    # Going left a cell
-    # Making sure there is no index out of range error
-    if (scavenger_Y - 1 <= 0):
-        direction += 1
-    else:
-        if (direction == 3):
-            terrain[scavenger_X][scavenger_Y].animals.clear()
-            terrain[scavenger_X][scavenger_Y - 1].animals.append(scavenger.kind)
-            print('The ' + scavenger.kind + ' moved to: ' + str(scavenger_X), str((scavenger_Y - 1)) + ' from ' + str(scavenger_X), str(scavenger_Y))
-            scavenger.location = [scavenger_X, scavenger_Y - 1]
-        
-    # Going up a cell
-    # Making sure there is no index out of range error
-    if (scavenger_Y + 1 >= world_size):
-        direction -= 1
-    else:
-        if (direction == 4):
-            terrain[scavenger_X][scavenger_Y].animals.clear()
-            terrain[scavenger_X][scavenger_Y + 1].animals.append(scavenger.kind)
-            print('The ' + scavenger.kind + ' moved to: ' + str(scavenger_X), str((scavenger_Y + 1)) + ' from ' + str(scavenger_X), str(scavenger_Y))
-            scavenger.location = [scavenger_X, scavenger_Y + 1]
-
-def animal_move(direction, moving_animal):
-    if (moving_animal.kind == 'Carnivore'):
-        carnivore_move(direction)
-    if (moving_animal.kind == 'Herbivore'):
-        herbivore_move(direction)
-    if (moving_animal.kind == 'Scavenger'):
-        scavenger_move(direction)
+    @property
+    def is_hungry(self):
+        if self.hunger == 0: #
+            self.is_dead #added by me
+        return self.hunger < 5
     
-
-def eat(eating_animal):
-    if (eating_animal.kind == 'Carnivore'):
-        if(carnivore.location == herbivore.location):
-            herbivore.status = 'eaten'
-            print('The Carnivore ate the Herbivore')
-            carnivore.hunger = 10
-    if (eating_animal.kind == 'Herbivore'):
-        hx = herbivore.location[0]
-        hy = herbivore.location[1]
-
-        if(terrain[hx][hy].cell_type == 'GRASS'):
-            print('The Herbivore ate some grass')
-            herbivore.hunger = 10
-    if (eating_animal.kind == 'Scavanger'):
-        if ((scavenger.location == herbivore.location and herbivore.status == 'dead' or herbivore.status == 'eaten') or (scavenger.location == carnivore.location and carnivore.status == 'dead')):
-            print('The Scavenger ate carrion')
-            scavenger.hunger = 10
-
-# Simulation
-days_counter = 0
-while (days_counter <= days):
-    print('Day: ' + str(days_counter))
-
-    if (carnivore.hunger <= 5 and carnivore.status == 'alive'):
-        random_direction = random.randint(1, 4)
-        eat(carnivore)
-        animal_move(random_direction, carnivore)
-
-        if (carnivore.hunger == 0):
-            carnivore.status = 'dead'
-            print('The ' + carnivore.kind + ' just died')
-
-    if (herbivore.hunger <= 5 and herbivore.status == 'alive'):
-        random_direction = random.randint(1, 4)
-        eat(herbivore)
-        animal_move(random_direction, herbivore)
-
-        if (herbivore.hunger == 0):
-            herbivore.status = 'dead'
-            print('The ' + herbivore.kind + ' just died')
-
-    if (scavenger.hunger <= 5 and scavenger.status == 'alive'):
-        random_direction = random.randint(1, 4)
-        eat(scavenger)
-        animal_move(random_direction, scavenger)
-
-        if (scavenger.hunger == 0):
-            scavenger.status = 'dead'
-            print('The ' + scavenger.kind + ' just died')
+    @property
+    def is_alive(self):
+        return self.status
     
-    days_counter += 1
-    carnivore.hunger -= 1
-    herbivore.hunger -= 1
-    scavenger.hunger -= 1
+    @property
+    def is_dead(self):
+        return self.status == 0
+
+    @property
+    def is_eaten(self):
+        return self.status == -1
+
+    def play(self):
+        assert self.is_alive, "Im dead"
+        if self.is_hungry:
+            try:
+                self.eat()
+            except EatErorr:
+                self.move()
+
+    def move(self):
+        assert self.is_alive, "Im dead"
+        new_cell = random.choice(self.cell.neighbours)
+        self.cell = new_cell
+
+    def eat(self):
+        assert self.is_alive, "Im dead"
+        self._eat()
+
+    def _eat(self):
+        raise EatErorr('not implemented')
+
+    def die(self, reason):
+        assert self.is_alive, "Im dead"
+        self.status = 0
+        print("Creature %s died: %s" % (self.id, reason))
+
+    def get_eaten(self, scavenger):
+        assert self.is_dead
+        self.status = -1
+        print("Dead creature: %s got eaten by %s" % (self.id, scavenger.id))
+
+class Carnivore(Creature):
+    def _eat(self):
+        for creature in self.cell.creatures:
+            if creature is self:
+                continue
+            if not creature.is_alive:
+                continue
+            if not self.hunger > creature.hunger:
+                continue
+            
+            creature.die("Eaten by %s" % self.id)
+            self.hunger += creature.hunger
+            return
+
+        raise EatErorr('Nothing to Eat')    
+
+class Herbivore(Creature):
+    def _eat(self):
+        if not self.cell.is_grass:
+            raise EatErorr("No grass")
+
+        self.hunger += random.randint(1,5)
+
+class Scavenger(Creature):
+    def _eat(self):
+        for creature in self.cell.creatures:
+            if creature is self:
+                continue
+            if not creature.is_dead:
+                continue
+            
+            self.hunger += int(creature.hunger/2)
+            creature.get_eaten(self)
+            return
+
+        raise EatErorr('Nothing to Eat')
+
+class Cell:
+    def __init__(self, terrain, x, y, nature):
+        self.terrain = terrain
+        self.x = x
+        self.y = y
+        self.nature = nature
+        self.creatures = []
+
+    @property
+    def coordinates(self):
+        return (self.x, self.y)
+    
+    @property
+    def is_grass(self):
+        return self.nature == 'GRASS'
+        
+    @property
+    def is_water(self):
+        return self.nature == 'WATER'
+
+    @property
+    def num_creatures(self):
+        return len(self.creatures)
+    
+    @property
+    def neighbours(self):
+        min_x = max(0, self.x-1)
+        max_x = min(self.terrain.width, self.x+1)
+        min_y = max(0, self.y-1)
+        max_y = min(self.terrain.height, self.y+1)
+
+        return [cell for cell in self.terrain.cells if (
+                cell is not self) 
+                and (max_x >= cell.x >= min_x) 
+                and (max_y >= cell.y >= min_y)
+        ]
+
+class Terrain:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.days = 0
+        self.cells = self.create_cells()
+
+    @property
+    def days_passed(self):
+        return self.days
+
+    @property
+    def has_creatures_alive(self):
+        return any(creature.is_alive for creature in self.creatures)
+
+    @property
+    def creatures(self):
+        creatures = []
+
+        for cell in self.cells:
+            creatures.extend(cell.creatures)
+        
+        return creatures
+
+    def create_cells(self):
+        cells = []
+        natures = ['WATER', 'GRASS', 'MOUNTAIN', 'DESERT']
+
+        for x in range(self.width):
+            for y in range(self.height):
+                nature = random.choice(natures)
+                cell = Cell(self, x, y, nature)
+                cells.append(cell)
+        
+        return cells
+
+    def create_creatures(self, num):
+        creature_classes = [Carnivore, Herbivore, Scavenger]
+
+        for _ in range(num):
+            klass = random.choice(creature_classes)
+            cell = random.choice(self.cells)
+            klass(cell)
+
+    def simulate(self):
+        for creature in self.creatures:
+            if creature.is_alive:
+                creature.hunger -= 1 # added by me
+                creature.play()
+        
+        self.days += 1
+
+    def render_status(self):
+        print('=========================== Day %s ===========================' % self.days)
+        for cell in self.cells:
+            print("Cell %s, type: %s, %s creatures" % (cell.coordinates, cell.nature, cell.num_creatures))
+            for creature in cell.creatures:
+                print("-----  Creature: %s, type: %s, status: %s" % (creature.id, creature.klass, creature.status))
+        print('==============================================================')
+
+def main():
+    terrain = Terrain(3, 4)
+    terrain.create_creatures(10)
+
+    while terrain.has_creatures_alive and terrain.days_passed < 100:
+        terrain.simulate()
+        terrain.render_status()
+
+    print('done')
+
+if __name__ == "__main__":
+    main()
