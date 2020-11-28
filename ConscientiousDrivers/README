@@ -1,4 +1,5 @@
 This is my Mobile Applications project. It's an app where people can report holes, distorted guardrails and etc.
+
 Whenever a user submits a new problem, the location of the device is automatically taken. This way whenever someone
 touches a problem's photo, details are being show underneath it which include the location of the reported problem
 and the first and last name of the user who has reported it. Also whenever they upload a new photo it's being stored
